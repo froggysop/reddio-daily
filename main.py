@@ -24,23 +24,36 @@ def get_wallet_addresses(file_path):
 def daily_check_in(wallet_address):
     url = f"https://points-mainnet.reddio.com/v1/daily_checkin?wallet_address={wallet_address}"
 
-    try:
-        response = requests.get(url, proxies=proxies, timeout=5) if proxies else requests.get(url, timeout=5)
-        response_data = response.json()
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = requests.get(url, headers=headers, proxies=proxies, timeout=5)
+            
+            # Check the status code
+            if response.status_code == 200:
+                response_data = response.json()
+                if response_data['status'] == 'Error':
+                    if response_data['error'] == 'User not registered':
+                        print(f"Wallet: {wallet_address} - User not registered")
+                    elif response_data['error'] == 'Already checked in':
+                        print(f"Wallet: {wallet_address} - Already checked in")
+                    else:
+                        print(f"Wallet: {wallet_address} - Error: {response_data['error']}")
+                else:
+                    print(f"Wallet: {wallet_address} - Check-in successful: {response_data['data']['message']}")
+                return  # Exit the loop after successful request
 
-        if response_data['status'] == 'Error':
-            if response_data['error'] == 'User not registered':
-                print(f"Wallet: {wallet_address} - User not registered")
-            elif response_data['error'] == 'Already checked in':
-                print(f"Wallet: {wallet_address} - Already checked in")
             else:
-                print(f"Wallet: {wallet_address} - Error: {response_data['error']}")
+                print(f"Wallet: {wallet_address} - Error: Received status code {response.status_code}")
+        
+        except requests.exceptions.RequestException as e:
+            print(f"Wallet: {wallet_address} - Request failed: {e}")
+        
+        # Retry logic
+        if attempt < MAX_RETRIES - 1:
+            print(f"Retrying... ({attempt + 1}/{MAX_RETRIES})")
+            time.sleep(2)  # Short delay before retry
         else:
-            print(f"Wallet: {wallet_address} - Check-in successful")
-
-    except requests.exceptions.RequestException as e:
-        print(f"Wallet: {wallet_address} - Request failed: {e}")
-
+            print(f"Max retries reached for wallet: {wallet_address}")
 
 def process_wallets(file_path):
     wallet_addresses = get_wallet_addresses(file_path)
