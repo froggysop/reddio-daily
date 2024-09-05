@@ -13,6 +13,10 @@ proxies = {
 MIN_DELAY = 10  # Minimum delay in seconds
 MAX_DELAY = 30  # Maximum delay in seconds
 
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+}
+
 def get_wallet_addresses(file_path):
     if not os.path.exists(file_path):
         print(f"{file_path} does not exist.")
